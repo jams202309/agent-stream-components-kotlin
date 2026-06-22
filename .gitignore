@@ -1,0 +1,11 @@
+.gradle/
+build/
+**/build/
+local.properties
+.DS_Store
+
+# Native outputs generated from agent-stream-sdk.
+agent-stream-android/src/main/jniLibs/
+
+# Local SDK checkout used by scripts.
+.checkout/

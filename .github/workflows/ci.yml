@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-aar:
+    name: Build Android AAR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28c
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Build AAR
+        env:
+          AGENT_STREAM_SDK_REPO: https://x-access-token:${{ secrets.AGENT_STREAM_SDK_TOKEN || github.token }}@github.com/unseal-network/agent-stream-sdk.git
+          AGENT_STREAM_SDK_REF: main
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: ./scripts/build-android-aar.sh
+
+      - name: Upload AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-stream-android-release
+          path: agent-stream-android/build/outputs/aar/agent-stream-android-release.aar
