@@ -1,6 +1,9 @@
 name: Release Android AAR
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
@@ -47,10 +50,19 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
+      - name: Resolve release inputs
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION_NAME=${{ inputs.version }}" >> "$GITHUB_ENV"
+            echo "AGENT_STREAM_SDK_REF=${{ inputs.sdk_ref }}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+            echo "AGENT_STREAM_SDK_REF=main" >> "$GITHUB_ENV"
+          fi
+
       - name: Build AAR
         env:
           AGENT_STREAM_SDK_REPO: https://x-access-token:${{ secrets.AGENT_STREAM_SDK_TOKEN || github.token }}@github.com/unseal-network/agent-stream-sdk.git
-          AGENT_STREAM_SDK_REF: ${{ inputs.sdk_ref }}
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: ./scripts/build-android-aar.sh
@@ -59,15 +71,14 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AGENT_STREAM_SDK_REF: ${{ inputs.sdk_ref }}
         run: |
           ./gradlew --no-daemon --no-configuration-cache \
             :agent-stream-android:publishAgentStreamAndroidPublicationToGitHubPackagesRepository \
-            -PversionName="${{ inputs.version }}" \
-            -PagentStreamSdkRef="${{ inputs.sdk_ref }}"
+            -PversionName="$VERSION_NAME" \
+            -PagentStreamSdkRef="$AGENT_STREAM_SDK_REF"
 
       - name: Upload AAR
         uses: actions/upload-artifact@v4
         with:
-          name: agent-stream-android-${{ inputs.version }}
+          name: agent-stream-android-${{ env.VERSION_NAME }}
           path: agent-stream-android/build/outputs/aar/agent-stream-android-release.aar
