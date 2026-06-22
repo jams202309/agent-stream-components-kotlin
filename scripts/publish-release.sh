@@ -10,8 +10,13 @@ if [[ -z "$VERSION_NAME" ]]; then
   exit 1
 fi
 
-if [[ -z "${GITHUB_TOKEN:-${GH_TOKEN:-${PACKAGES_TOKEN:-${PRIVATE_REGISTRY_TOKEN:-}}}}" ]]; then
-  echo "A GitHub Packages token is required. Set GITHUB_TOKEN, GH_TOKEN, PACKAGES_TOKEN, or PRIVATE_REGISTRY_TOKEN." >&2
+if [[ -z "${GITHUB_ACTOR:-}" ]]; then
+  echo "A GitHub Packages username is required. Set GITHUB_ACTOR." >&2
+  exit 1
+fi
+
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  echo "A GitHub Packages token is required for publishing. Set GITHUB_TOKEN." >&2
   exit 1
 fi
 
